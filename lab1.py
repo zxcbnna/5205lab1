@@ -35,6 +35,10 @@ roll = 0.0
 pitch = 0.0
 yaw = 0.0
 
+# Initialize baud rate
+global fs
+fs = 115200
+
 
 def complementary_filter(roll, pitch, yaw, gyro_x, gyro_y, gyro_z, x, y, z):
     # Compute roll and pitch angles using complementary filter
