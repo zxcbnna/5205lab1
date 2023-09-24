@@ -7,6 +7,24 @@ import array
 import numpy as np
 import math
 
+from scipy.signal import butter, lfilter
+
+# Define my low-pass filter function
+def butter_lowpass(cutoff, fs, order=5):
+    nyquist = 0.5 * fs
+    normal_cutoff = cutoff / nyquist
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    return b, a
+
+def butter_lowpass_filter(data, cutoff, fs, order=5):
+    b, a = butter_lowpass(cutoff, fs, order=order)
+    y = lfilter(b, a, data)
+    return y
+    
+# Create low-pass filter parameters
+cutoff_frequency = 10.0  # Adjust this value to adjust the accuracy 
+filter_order = 6  # Adjust this value to adjust the accuracy 
+
 # Complementary filter constants
 alpha = 0.98  # Weight for gyroscope data
 dt = 0.01     # Sample interval (adjust as needed)
@@ -107,9 +125,18 @@ def plotData():
             else:
                 data[i][:-1] = data[i][1:]
                 data[i][-1] = signal[i]
-        curve1.setData(data[0], pen=pg.mkPen('g', width=3))
-        curve2.setData(data[1], pen=pg.mkPen('r', width=3))
-        curve3.setData(data[2], pen=pg.mkPen('b', width=3))
+        # curve1.setData(data[0], pen=pg.mkPen('g', width=3))
+        # curve2.setData(data[1], pen=pg.mkPen('r', width=3))
+        # curve3.setData(data[2], pen=pg.mkPen('b', width=3))
+        # Apply low-pass filter to the signals
+        filtered_x = butter_lowpass_filter(data[0], cutoff_frequency, fs, order=filter_order)
+        filtered_y = butter_lowpass_filter(data[1], cutoff_frequency, fs, order=filter_order)
+        filtered_z = butter_lowpass_filter(data[2], cutoff_frequency, fs, order=filter_order)
+    
+        # Update the plots with the filtered data
+        curve1.setData(filtered_x, pen=pg.mkPen('g', width=3))
+        curve2.setData(filtered_y, pen=pg.mkPen('r', width=3))
+        curve3.setData(filtered_z, pen=pg.mkPen('b', width=3))
 pitch = 0
 roll = 0
 yaw = 0
