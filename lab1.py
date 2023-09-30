@@ -170,6 +170,7 @@ def plotData():
                 v[i][-1] = vv[i]
         roll, pitch, yaw = complementary_filter(roll, pitch, yaw, gyrox, gyroy, gyroz, x, y, z)
         gz = math.sqrt(9.8 * 9.8 / (1 + math.pow(math.tan(roll), 2) + math.pow(math.tan(pitch), 2)))
+        # gz = 9.8 * math.sqrt(1 + math.pow(math.tan(roll), 2) + math.pow(math.tan(pitch), 2))
         if z < 0:
             gz = -gz
         gx = gz * math.tan(pitch)
