@@ -7,11 +7,10 @@ import array
 import numpy as np
 import math
 
-from scipy.signal import butter, lfilter, filtfilt
-from filterpy.kalman import KalmanFilter
-
+from scipy.signal import butter, filtfilt
 ymin = -2
 ymax = 2
+
 
 # Define my low-pass filter function
 def butter_lowpass(cutoff, fs, order=5):
@@ -32,41 +31,16 @@ cutoff_frequency = 10.0  # Adjust this value to adjust the accuracy
 filter_order = 6  # Adjust this value to adjust the accuracy
 cutoff_freq = 1000
 
-# Initialize Kalman filter parameters
-kf = KalmanFilter(dim_x=3, dim_z=1)  # 3 states (acceleration, velocity, position), 1 measurement (acceleration)
-kf.x = np.array([0, 0, 0])  # initial state (acceleration, velocity, position)
-kf.P *= 1e4  # initial uncertainty
-kf.R = 1  # measurement noise
-kf.Q = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) * 0.01  # process noise
-
-# Function to filter acceleration readings using Kalman filter
-def filter_acceleration(data):
-    filtered_acceleration = []
-    for measurement in data:
-        # Predict
-        kf.predict()
-
-        # Reshape the measurement to make it 2D (1x1 array)
-        measurement = np.array([[measurement]])
-
-        # Update with measurement
-        kf.update(measurement)
-
-        # Filtered acceleration is the first element of the state vector
-        filtered_acceleration.append(kf.x[0])
-    return filtered_acceleration
-
-
 # Complementary filter constants
 alpha = 0.9  # Weight for gyroscope data
-dt = 1/115200  # Sample interval (adjust as needed)
+dt = 1 / 115200  # Sample interval (adjust as needed)
 
 # Initialize initial angles
 global roll, pitch, yaw
 roll = 0.0
 pitch = 0.0
 yaw = 0.0
-vv = [0,0,0]
+vv = [0, 0, 0]
 
 # Initialize baud rate
 global fs, interval
@@ -170,15 +144,10 @@ def plotData():
                 v[i][-1] = vv[i]
         roll, pitch, yaw = complementary_filter(roll, pitch, yaw, gyrox, gyroy, gyroz, x, y, z)
         gz = math.sqrt(9.8 * 9.8 / (1 + math.pow(math.tan(roll), 2) + math.pow(math.tan(pitch), 2)))
-        # gz = 9.8 * math.sqrt(1 + math.pow(math.tan(roll), 2) + math.pow(math.tan(pitch), 2))
         if z < 0:
             gz = -gz
         gx = gz * math.tan(pitch)
         gy = gz * math.tan(roll)
-        
-        # gx = math.sin(pitch)
-        # gy = -math.sin(roll) * math.cos(pitch)
-        # gz = -math.cos(roll) * math.cos(pitch)
 
         signal = [x - gx, y - gy, z - gz]
         for i in range(len(data)):
@@ -196,11 +165,6 @@ def plotData():
         filtered_y = butter_lowpass_filter(data[1], cutoff_freq, fs, order=filter_order)
         filtered_z = butter_lowpass_filter(data[2], cutoff_freq, fs, order=filter_order)
 
-        # # Apply Kalman filter
-        # filtered_x = filter_acceleration(data[0])
-        # filtered_y = filter_acceleration(data[1])
-        # filtered_z = filter_acceleration(data[2])
-
         # # Calculate velocity using the trapezoidal rule for numerical integration
         # vel_x = np.cumsum(data[0]) * interval  # Numerical integration for x-axis acceleration
         # vel_y = np.cumsum(data[1]) * interval  # Numerical integration for y-axis acceleration
@@ -211,24 +175,15 @@ def plotData():
         vel_y = np.cumsum(filtered_y) * interval  # Numerical integration for y-axis acceleration
         vel_z = np.cumsum(filtered_z) * interval  # Numerical integration for z-axis acceleration
 
-        # # Update the plots with the filtered data
-        # curve1.setData(data[0], pen=pg.mkPen('g', width=3))
-        # curve2.setData(data[1], pen=pg.mkPen('r', width=3))
-        # curve3.setData(data[2], pen=pg.mkPen('b', width=3))
-
         # Update the plots with the filtered data
         curve1.setData(filtered_x, pen=pg.mkPen('g', width=3))
         curve2.setData(filtered_y, pen=pg.mkPen('r', width=3))
         curve3.setData(filtered_z, pen=pg.mkPen('b', width=3))
 
-        # Update the plots with the filtered data
-        # curve4.setData(vel_x, pen=pg.mkPen('g', width=3))
-        # curve5.setData(vel_y, pen=pg.mkPen('r', width=3))
-        # curve6.setData(vel_z, pen=pg.mkPen('b', width=3))
-
         curve4.setData(v[0], pen=pg.mkPen('g', width=3))
         curve5.setData(v[1], pen=pg.mkPen('r', width=3))
         curve6.setData(v[2], pen=pg.mkPen('b', width=3))
+
 
 pitch = 0
 roll = 0
@@ -237,38 +192,7 @@ n = 1
 sum1 = 0
 sum2 = 0
 sum3 = 0
-# while True:
-#     signal = Data.readline()
-#     signal = dataProcess(signal)
-#     if len(signal) == 6:
-#         x = signal[0] * 9.8 / 8192
-#         y = signal[1] * 9.8 / 8192
-#         z = signal[2] * 9.8 / 8192
-#         gyrox = signal[3] /131
-#         gyroy = signal[4] /131
-#         gyroz = signal[5] /131
-#         # avg1 = sum1 /n
-#         # avg2 = sum2 /n
-#         # avg3 = sum3 /n
-#         # gyrox = signal[3] / 131 - 6.688
-#         # gyroy = signal[4] / 131 - 1.825
-#         # gyroz = signal[5] / 131 - 0.044
-#         # pitch = math.atan(x/z)
-#         # roll = math.atan(y/z)
-#         # yaw = math.atan(x/y)
-#         # pitch += gyroy * 0.01 * math.pi/ 180
-#         # roll += gyrox * 0.01 * math.pi/ 180
-#         # yaw += gyroz * 0.01 * math.pi/ 180
-#         roll, pitch, yaw = complementary_filter(roll, pitch, yaw, gyrox, gyroy, gyroz, x, y, z)
-#         gz = math.sqrt(9.8 * 9.8 / (1 + math.pow(math.tan(roll), 2) + math.pow(math.tan(pitch), 2)))
-#         if z < 0:
-#             gz = -gz
-#         gx = gz * math.tan(pitch)
-#         gy = gz * math.tan(roll)
-#         # list = [roll,pitch,yaw]
-#         list = [gx, gy, gz]
-#         print(list)
-#     n += 1
+
 fig1 = win.addPlot()
 fig1.showGrid(x=True, y=True)
 fig1.setRange(xRange=[0, xLength], yRange=[ymin, ymax], padding=0)
@@ -319,7 +243,6 @@ timer.timeout.connect(plotData)
 win.show()
 timer.start(1)
 app.exec()
-
 
 
 
