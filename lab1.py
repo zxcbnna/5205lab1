@@ -66,6 +66,7 @@ global roll, pitch, yaw
 roll = 0.0
 pitch = 0.0
 yaw = 0.0
+vv = [0,0,0]
 
 # Initialize baud rate
 global fs, interval
@@ -141,6 +142,8 @@ def plotData():
     global roll
     global pitch
     global yaw
+    global v
+    global vv
     signal = Data.readline()
     signal = dataProcess(signal)
     if (len(signal) == 6):
@@ -156,6 +159,15 @@ def plotData():
         # pitch += (gyrox / 131) * 0.01 * 2 * math.pi / 360
         # roll += (gyroy / 131) * 0.01 * 2 * math.pi / 360
         # yaw += (gyroz / 131) * 0.01 * 2 * math.pi / 360
+        vv[0] += x * dt
+        vv[1] += y * dt
+        vv[2] += z * dt
+        for i in range(len(v)):
+            if len(v[i]) < xLength:
+                v[i].append(vv[i])
+            else:
+                v[i][:-1] = v[i][1:]
+                v[i][-1] = vv[i]
         roll, pitch, yaw = complementary_filter(roll, pitch, yaw, gyrox, gyroy, gyroz, x, y, z)
         gz = math.sqrt(9.8 * 9.8 / (1 + math.pow(math.tan(roll), 2) + math.pow(math.tan(pitch), 2)))
         if z < 0:
@@ -209,10 +221,13 @@ def plotData():
         curve3.setData(filtered_z, pen=pg.mkPen('b', width=3))
 
         # Update the plots with the filtered data
-        curve4.setData(vel_x, pen=pg.mkPen('g', width=3))
-        curve5.setData(vel_y, pen=pg.mkPen('r', width=3))
-        curve6.setData(vel_z, pen=pg.mkPen('b', width=3))
+        # curve4.setData(vel_x, pen=pg.mkPen('g', width=3))
+        # curve5.setData(vel_y, pen=pg.mkPen('r', width=3))
+        # curve6.setData(vel_z, pen=pg.mkPen('b', width=3))
 
+        curve4.setData(v[0], pen=pg.mkPen('g', width=3))
+        curve5.setData(v[1], pen=pg.mkPen('r', width=3))
+        curve6.setData(v[2], pen=pg.mkPen('b', width=3))
 
 pitch = 0
 roll = 0
@@ -296,6 +311,7 @@ fig6.setLabel(axis='bottom', text='x/point')
 fig6.setTitle('velocity z')
 curve6 = fig6.plot()
 data = [np.zeros(xLength).__array__('d'), np.zeros(xLength).__array__('d'), np.zeros(xLength).__array__('d')]
+v = [np.zeros(xLength).__array__('d'), np.zeros(xLength).__array__('d'), np.zeros(xLength).__array__('d')]
 
 timer = pg.QtCore.QTimer()
 timer.timeout.connect(plotData)
